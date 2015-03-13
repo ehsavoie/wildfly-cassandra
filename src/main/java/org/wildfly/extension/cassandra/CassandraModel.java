@@ -14,7 +14,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package org.wildfly.extension.cassandra;
 
 /**
@@ -48,4 +47,5 @@ public class CassandraModel {
     public static final String REQUEST_SCHEDULER = "request-scheduler";
     public static final String SERVER_ENCRYPTION = "server-encryption-enabled";
     public static final String CLIENT_ENCRYPTION = "client-encryption-enabled";
+    public static final String KEYSPACE = "keyspace";
 }

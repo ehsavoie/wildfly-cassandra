@@ -47,7 +47,7 @@ public class SubsystemParser implements XMLStreamConstants, XMLElementReader<Lis
         xmlDescription = builder(RootDefinition.INSTANCE)
                 .addChild(
                         builder(ClusterDefinition.INSTANCE)
-                                .addAttributes(ClusterDefinition.INSTANCE.getAttributes())
+                                .addAttributes(ClusterDefinition.ATTRIBUTES)
                 )               .setXmlElementName(CassandraModel.CLUSTER)
                 .build();
     }

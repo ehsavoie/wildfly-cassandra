@@ -41,16 +41,16 @@
         <xs:attribute name="authorizer" use="optional" type="xs:string"/>
         <xs:attribute name="partioner" use="optional" type="xs:string"/>
 
-        <xs:attribute name="seed-provider-class-name" use="required" type="xs:string"/>
-        <xs:attribute name="seed-provider-seeds" use="required" type="xs:string"/>
+        <xs:attribute name="seed-provider-class-name" use="optional" type="xs:string"/>
+        <xs:attribute name="seed-provider-seeds" use="optional" type="xs:string"/>
 
-        <xs:attribute name="listen-address" use="required" type="xs:string"/>
-        <xs:attribute name="broadcast-address" use="required" type="xs:string"/>
+        <xs:attribute name="listen-address" use="optional" type="xs:string"/>
+        <xs:attribute name="broadcast-address" use="optional" type="xs:string"/>
 
-        <xs:attribute name="start-native-transport" use="required" type="xs:boolean"/>
+        <xs:attribute name="start-native-transport" use="optional" type="xs:boolean"/>
         <xs:attribute name="native-transport-port" use="optional" type="xs:long"/>
 
-        <xs:attribute name="start-rpc" use="required" type="xs:boolean"/>
+        <xs:attribute name="start-rpc" use="optional" type="xs:boolean"/>
         <xs:attribute name="rpc-port" use="optional" type="xs:long"/>
 
         <xs:attribute name="internode-authenticator" use="optional" type="xs:string"/>

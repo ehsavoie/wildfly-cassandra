@@ -80,10 +80,12 @@
         <dependencySet>
             <useTransitiveDependencies>true</useTransitiveDependencies>
             <useTransitiveFiltering>true</useTransitiveFiltering>
+            <!--<outputFileNameMapping>${artifactId}.${extension}</outputFileNameMapping>-->
             <outputDirectory>modules/system/layers/base/org/wildfly/extension/cassandra/main</outputDirectory>
             <includes>
                 <include>org.apache.cassandra:cassandra-all</include>
                 <include>org.apache.cassandra:cassandra-thrift</include>
+                <include>com.datastax.cassandra:cassandra-driver-core</include>
 
                 <include>org.xerial.snappy:snappy-java</include>
                 <include>net.jpountz.lz4:lz4</include>
@@ -99,14 +101,12 @@
                 <include>com.googlecode.json-simple</include>
                 <include>com.boundary:high-scale-lib</include>
                 <include>org.mindrot:jbcrypt</include>
-                <include>com.yammer.metrics:metrics-core</include>
-                <include>com.addthis.metrics:reporter-config</include>
+                <include>io.dropwizard.metrics:metrics-core</include>
+                <include>com.addthis.metrics:reporter-config3</include>
                 <include>com.thinkaurelius.thrift</include>
                 <include>com.lmax:disruptor</include>
                 <include>net.sf.supercsv</include>
                 <include>org.apache.thrift</include>
-                <include>org.apache.httpcomponents:httpclient</include>
-                <include>org.apache.httpcomponents:httpcore</include>
 
                 <include>com.github.jbellis:jamm</include>
                 <include>net.java.dev.jna:jna</include>

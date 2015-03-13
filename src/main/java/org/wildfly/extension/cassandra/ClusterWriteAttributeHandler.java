@@ -22,12 +22,10 @@ import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.RestartParentWriteAttributeHandler;
-import org.jboss.as.controller.ServiceVerificationHandler;
+import org.jboss.as.controller.operations.common.Util;
 import org.jboss.dmr.ModelNode;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 
-import java.util.ArrayList;
 
 /**
  * @author Heiko Braun
@@ -40,17 +38,12 @@ public class ClusterWriteAttributeHandler extends RestartParentWriteAttributeHan
     }
 
     @Override
-    protected void recreateParentService(OperationContext context, PathAddress parentAddress, ModelNode parentModel, ServiceVerificationHandler verificationHandler) throws OperationFailedException {
-        ClusterAdd.installRuntimeServices(context, parentAddress, parentModel, verificationHandler, new ArrayList<ServiceController<?>>());
-    }
-
-    @Override
     protected ServiceName getParentServiceName(PathAddress parentAddress) {
-        return ClusterAdd.SERVICE_NAME.append(parentAddress.getLastElement().getValue());
+        return CassandraService.BASE_SERVICE_NAME.append(Util.getNameFromAddress(parentAddress));
     }
 
     @Override
-    protected void removeServices(OperationContext context, ServiceName parentService, ModelNode parentModel) throws OperationFailedException {
-        super.removeServices(context, parentService, parentModel);
+    protected void recreateParentService(OperationContext context, PathAddress parentAddress, ModelNode parentModel) throws OperationFailedException {
+        ClusterAdd.installRuntimeServices(context, parentAddress, parentModel);
     }
 }

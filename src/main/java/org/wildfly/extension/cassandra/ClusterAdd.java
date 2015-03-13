@@ -17,28 +17,26 @@
 
 package org.wildfly.extension.cassandra;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import org.apache.cassandra.config.Config;
-import org.apache.cassandra.config.SeedProviderDef;
+import org.apache.cassandra.config.ParameterizedClass;
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ExpressionResolver;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.ServiceVerificationHandler;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.services.path.PathManager;
 import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
+import org.jboss.msc.service.ServiceTarget;
 
 /**
  * Handler responsible for adding the cluster resource to the model
@@ -48,7 +46,13 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_
 class ClusterAdd extends AbstractAddStepHandler {
 
     public final static ClusterAdd INSTANCE = new ClusterAdd();
-    public static final ServiceName SERVICE_NAME = ServiceName.JBOSS.append("cassandra");
+
+    @Override
+    protected Resource createResource(OperationContext context) {
+        Resource resource = new ClusterResource();
+        context.addResource(PathAddress.EMPTY_ADDRESS, resource);
+        return resource;
+    }
 
     /**
      * {@inheritDoc}
@@ -60,31 +64,49 @@ class ClusterAdd extends AbstractAddStepHandler {
         }
     }
 
+    @Override
+    protected void performRuntime(OperationContext context, ModelNode operation, Resource resource) throws OperationFailedException {
+        super.performRuntime(context, operation, resource);
+        ClusterResource clusterResource = (ClusterResource) resource;
+        ServiceController<?> controller = context.getServiceRegistry(false).getService(ControlledProcessStateService.SERVICE_NAME);
+        if(controller != null) {
+            ControlledProcessStateService processStateService = (ControlledProcessStateService) controller.getService();
+            clusterResource.setProcessState(processStateService);
+        }
+        try {
+            String connectionPoint = ClusterDefinition.LISTEN_ADDRESS.resolveModelAttribute(context, operation).asString();
+            if(connectionPoint != null) {
+                clusterResource.setConnectionPoint(connectionPoint);
+            }
+            int port = ClusterDefinition.NATIVE_TRANSPORT_PORT.resolveModelAttribute(context, operation).asInt();
+            if(port > 0) {
+                clusterResource.setPort(port);
+            }
+        } catch (OperationFailedException ex) {
+            CassandraLogger.LOGGER.error("Error adding a new cluster.", ex);
+        }
+
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model, ServiceVerificationHandler verificationHandler, List<ServiceController<?>> controllers) throws OperationFailedException {
+    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
         final PathAddress address = PathAddress.pathAddress(operation.get(OP_ADDR));
-        ModelNode fullTree = Resource.Tools.readModel(context.readResource(PathAddress.EMPTY_ADDRESS));
-
-        installRuntimeServices(context, address, fullTree, verificationHandler, controllers);
+        installRuntimeServices(context, address, model);
     }
 
-    static void installRuntimeServices(OperationContext context, PathAddress address, ModelNode fullModel, ServiceVerificationHandler verificationHandler, List<ServiceController<?>> controllers) throws OperationFailedException {
+    static void installRuntimeServices(OperationContext context, PathAddress address, ModelNode clusterModel) throws OperationFailedException {
         String clusterName = address.getLastElement().getValue();
-
-        final Config serviceConfig = createServiceConfig(context, address, fullModel);
+        final Config serviceConfig = createServiceConfig(context, address, clusterModel);
         CassandraService service = new CassandraService(clusterName, serviceConfig);
-
-        ServiceController<CassandraService> controller = context.getServiceTarget()
-                .addService(SERVICE_NAME, service)
-                .addListener(verificationHandler)
+        final ServiceTarget serviceTarget = context.getServiceTarget();
+        serviceTarget.addService(service.getServiceName(), service)
                 .setInitialMode(ServiceController.Mode.ACTIVE)
                 .addDependency(PathManagerService.SERVICE_NAME, PathManager.class, service.getPathManagerInjector())
+                .addDependency(ControlledProcessStateService.SERVICE_NAME)
                 .install();
-        controllers.add(controller);
-
     }
 
     private static Config createServiceConfig(final OperationContext context, PathAddress address, ModelNode fullModel) throws OperationFailedException {
@@ -107,15 +129,15 @@ class ClusterAdd extends AbstractAddStepHandler {
         cassandraConfig.partitioner= ClusterDefinition.PARTIONER.resolveModelAttribute(context, fullModel).asString();
 
         // The cassandra config is a real brainfuck
-        LinkedHashMap providerConfig = new LinkedHashMap();
+        LinkedHashMap<String, Object> providerConfig = new LinkedHashMap<>();
         providerConfig.put("class_name", ClusterDefinition.SEED_PROVIDER.resolveModelAttribute(context, fullModel).asString());
-        HashMap<String, String> params = new HashMap<String, String>();
+        HashMap<String, String> params = new HashMap<>();
         params.put("seeds", ClusterDefinition.SEEDS.resolveModelAttribute(expressionResolver, fullModel).asString());
         ArrayList wrapper = new ArrayList();
         wrapper.add(params);
         providerConfig.put("parameters", wrapper);
 
-        SeedProviderDef providerDef = new SeedProviderDef(providerConfig);
+        ParameterizedClass providerDef = new ParameterizedClass(providerConfig);
         cassandraConfig.seed_provider = providerDef;
 
         cassandraConfig.listen_address = ClusterDefinition.LISTEN_ADDRESS.resolveModelAttribute(expressionResolver, fullModel).asString();
@@ -129,14 +151,10 @@ class ClusterAdd extends AbstractAddStepHandler {
 
         cassandraConfig.internode_authenticator= ClusterDefinition.INTERNODE_AUTHENTICATOR.resolveModelAttribute(context, fullModel).asString();
 
-        if(fullModel.hasDefined(CassandraModel.DATA_FILE_DIR))
-            cassandraConfig.data_file_directories= new String[]{ClusterDefinition.DATA_FILE_DIR.resolveModelAttribute(context, fullModel).asString()};
+        cassandraConfig.data_file_directories = new String[]{ClusterDefinition.DATA_FILE_DIR.resolveModelAttribute(context, fullModel).asString()};
+        cassandraConfig.saved_caches_directory = ClusterDefinition.SAVED_CACHES_DIR.resolveModelAttribute(context, fullModel).asString();
+        cassandraConfig.commitlog_directory= ClusterDefinition.COMMIT_LOG_DIR.resolveModelAttribute(context, fullModel).asString();
 
-        if(fullModel.hasDefined(CassandraModel.SAVED_CACHES_DIR))
-            cassandraConfig.saved_caches_directory= ClusterDefinition.SAVED_CACHES_DIR.resolveModelAttribute(context, fullModel).asString();
-
-        if(fullModel.hasDefined(CassandraModel.COMMIT_LOG_DIR))
-            cassandraConfig.commitlog_directory= ClusterDefinition.COMMIT_LOG_DIR.resolveModelAttribute(context, fullModel).asString();
 
         cassandraConfig.commitlog_sync= Config.CommitLogSync.valueOf(ClusterDefinition.COMMIT_LOG_SYNC.resolveModelAttribute(context, fullModel).asString());
         cassandraConfig.commitlog_sync_period_in_ms = ClusterDefinition.COMMIT_LOG_SYNC_PERIOD.resolveModelAttribute(context, fullModel).asInt();

@@ -17,6 +17,16 @@
 
 package org.wildfly.extension.cassandra;
 
+
+import static org.jboss.as.server.ServerEnvironment.SERVER_DATA_DIR;
+import static org.wildfly.extension.cassandra.CassandraService.CASSANDRA_COMMIT_LOG_DIR;
+import static org.wildfly.extension.cassandra.CassandraService.CASSANDRA_DATA_FILE_DIR;
+import static org.wildfly.extension.cassandra.CassandraService.CASSANDRA_SAVED_CACHES_DIR;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.ServiceRemoveStepHandler;
@@ -28,11 +38,7 @@ import org.jboss.as.controller.access.management.ApplicationTypeAccessConstraint
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import org.jboss.dmr.ValueExpression;
 
 /**
  * The cluster resource definition. Carries the main cassanda configuration attributes.
@@ -41,6 +47,10 @@ import java.util.List;
  * @since 20/08/14
  */
 public class ClusterDefinition extends PersistentResourceDefinition {
+    public static final int DEFAULT_NATIVE_PORT = 9042;
+    public static final int DEFAULT_RPC_PORT = 9160;
+
+    public static final String CASSANDRA_BIND_ADDRESS = "jboss.bind.address.cassandra";
 
     private final List<AccessConstraintDefinition> accessConstraints;
 
@@ -48,13 +58,11 @@ public class ClusterDefinition extends PersistentResourceDefinition {
         super(CassandraExtension.CLUSTER_PATH,
                 CassandraExtension.getResourceDescriptionResolver(CassandraModel.CLUSTER),
                 ClusterAdd.INSTANCE,
-                new ServiceRemoveStepHandler(ClusterAdd.SERVICE_NAME, ClusterAdd.INSTANCE));
+                new ServiceRemoveStepHandler(CassandraService.BASE_SERVICE_NAME, ClusterAdd.INSTANCE));
 
         ApplicationTypeConfig atc = new ApplicationTypeConfig(CassandraExtension.SUBSYSTEM_NAME, CassandraModel.CLUSTER);
         accessConstraints = new ApplicationTypeAccessConstraintDefinition(atc).wrapAsList();
     }
-
-    // -----------
 
     static final SimpleAttributeDefinition DEBUG =
             new SimpleAttributeDefinitionBuilder(CassandraModel.DEBUG, ModelType.BOOLEAN, true)
@@ -99,54 +107,60 @@ public class ClusterDefinition extends PersistentResourceDefinition {
                     .build();
 
     static final SimpleAttributeDefinition SEED_PROVIDER =
-            new SimpleAttributeDefinitionBuilder(CassandraModel.SEED_PROVIDER, ModelType.STRING, false)
+            new SimpleAttributeDefinitionBuilder(CassandraModel.SEED_PROVIDER, ModelType.STRING, true)
                     .setAllowExpression(false)
+                    .setDefaultValue(new ModelNode("org.apache.cassandra.locator.SimpleSeedProvider"))
                     .setRestartAllServices()
                     .build();
 
     // TODO: this should become a list of seeds
     static final SimpleAttributeDefinition SEEDS =
-            new SimpleAttributeDefinitionBuilder(CassandraModel.SEEDS, ModelType.STRING, false)
+            new SimpleAttributeDefinitionBuilder(CassandraModel.SEEDS, ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(new ValueExpression("${" + CASSANDRA_BIND_ADDRESS + ":127.0.0.1}")))
                     .setRestartAllServices()
                     .build();
 
 
     static final SimpleAttributeDefinition LISTEN_ADDRESS =
-            new SimpleAttributeDefinitionBuilder(CassandraModel.LISTEN_ADDRESS, ModelType.STRING, false)
+            new SimpleAttributeDefinitionBuilder(CassandraModel.LISTEN_ADDRESS, ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(new ValueExpression("${" + CASSANDRA_BIND_ADDRESS + ":127.0.0.1}")))
                     .setRestartAllServices()
                     .build();
 
     static final SimpleAttributeDefinition BROADCAST_ADDRESS=
-            new SimpleAttributeDefinitionBuilder(CassandraModel.BROADCAST_ADDRESS, ModelType.STRING, false)
+            new SimpleAttributeDefinitionBuilder(CassandraModel.BROADCAST_ADDRESS, ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(new ValueExpression("${" + CASSANDRA_BIND_ADDRESS + ":127.0.0.1}")))
                     .setRestartAllServices()
                     .build();
 
     static final SimpleAttributeDefinition START_NATIVE_TRANSPORT =
-            new SimpleAttributeDefinitionBuilder(CassandraModel.START_NATIVE_TRANSPORT, ModelType.BOOLEAN, false)
+            new SimpleAttributeDefinitionBuilder(CassandraModel.START_NATIVE_TRANSPORT, ModelType.BOOLEAN, true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(true))
                     .setRestartAllServices()
                     .build();
 
     static final SimpleAttributeDefinition START_RPC =
-            new SimpleAttributeDefinitionBuilder(CassandraModel.START_RPC, ModelType.BOOLEAN, false)
+            new SimpleAttributeDefinitionBuilder(CassandraModel.START_RPC, ModelType.BOOLEAN, true)
                     .setAllowExpression(false)
+                    .setDefaultValue(new ModelNode(true))
                     .setRestartAllServices()
                     .build();
 
     static final SimpleAttributeDefinition NATIVE_TRANSPORT_PORT =
             new SimpleAttributeDefinitionBuilder(CassandraModel.NATIVE_TRANSPORT_PORT, ModelType.INT, true)
                     .setAllowExpression(false)
-                    .setDefaultValue(new ModelNode(9042))
+                    .setDefaultValue(new ModelNode(DEFAULT_NATIVE_PORT))
                     .setRestartAllServices()
                     .build();
 
     static final SimpleAttributeDefinition RPC_PORT =
             new SimpleAttributeDefinitionBuilder(CassandraModel.RPC_PORT, ModelType.INT, true)
                     .setAllowExpression(true)
-                    .setDefaultValue(new ModelNode(9160))
+                    .setDefaultValue(new ModelNode(DEFAULT_RPC_PORT))
                     .setRestartAllServices()
                     .build();
 
@@ -160,18 +174,21 @@ public class ClusterDefinition extends PersistentResourceDefinition {
     static final SimpleAttributeDefinition DATA_FILE_DIR =
             new SimpleAttributeDefinitionBuilder(CassandraModel.DATA_FILE_DIR, ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(new ValueExpression("${" + SERVER_DATA_DIR + "}/" + CASSANDRA_DATA_FILE_DIR)))
                     .setRestartAllServices()
                     .build();
 
     static final SimpleAttributeDefinition SAVED_CACHES_DIR =
             new SimpleAttributeDefinitionBuilder(CassandraModel.SAVED_CACHES_DIR, ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(new ValueExpression("${" + SERVER_DATA_DIR + "}/" + CASSANDRA_SAVED_CACHES_DIR)))
                     .setRestartAllServices()
                     .build();
 
     static final SimpleAttributeDefinition COMMIT_LOG_DIR =
             new SimpleAttributeDefinitionBuilder(CassandraModel.COMMIT_LOG_DIR, ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(new ValueExpression("${" + SERVER_DATA_DIR + "}/" + CASSANDRA_COMMIT_LOG_DIR)))
                     .setRestartAllServices()
                     .build();
 
@@ -218,8 +235,6 @@ public class ClusterDefinition extends PersistentResourceDefinition {
                     .setDefaultValue(new ModelNode(false))
                     .setRestartAllServices()
                     .build();
-
-
     // -----------
     static final AttributeDefinition[] ATTRIBUTES = {
             DEBUG, NUM_TOKENS,
@@ -239,7 +254,7 @@ public class ClusterDefinition extends PersistentResourceDefinition {
 
     };
 
-    private static final List CHILDREN = Collections.EMPTY_LIST;
+    private static final List<? extends PersistentResourceDefinition> CHILDREN = Collections.singletonList(KeyspaceDefinition.INSTANCE);
 
     static final ClusterDefinition INSTANCE = new ClusterDefinition();
 
