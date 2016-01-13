@@ -21,6 +21,7 @@ package org.wildfly.extension.cassandra;
 import static org.jboss.as.server.ServerEnvironment.SERVER_DATA_DIR;
 import static org.wildfly.extension.cassandra.CassandraService.CASSANDRA_COMMIT_LOG_DIR;
 import static org.wildfly.extension.cassandra.CassandraService.CASSANDRA_DATA_FILE_DIR;
+import static org.wildfly.extension.cassandra.CassandraService.CASSANDRA_HINTS_DIR;
 import static org.wildfly.extension.cassandra.CassandraService.CASSANDRA_SAVED_CACHES_DIR;
 
 import java.util.Arrays;
@@ -81,7 +82,14 @@ public class ClusterDefinition extends PersistentResourceDefinition {
     static final SimpleAttributeDefinition HINTED_HANDOFF_ENABLED =
             new SimpleAttributeDefinitionBuilder(CassandraModel.HINTED_HANDOFF_ENABLED, ModelType.BOOLEAN, true)
                     .setAllowExpression(false)
-                    .setDefaultValue(new ModelNode(true))
+                    .setDefaultValue(new ModelNode(false))
+                    .setRestartAllServices()
+                    .build();
+
+    static final SimpleAttributeDefinition HINTS_DIR =
+            new SimpleAttributeDefinitionBuilder(CassandraModel.HINTS_DIR, ModelType.STRING, true)
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(new ValueExpression("${" + SERVER_DATA_DIR + "}/" + CASSANDRA_HINTS_DIR)))
                     .setRestartAllServices()
                     .build();
 
@@ -238,7 +246,7 @@ public class ClusterDefinition extends PersistentResourceDefinition {
     // -----------
     static final AttributeDefinition[] ATTRIBUTES = {
             DEBUG, NUM_TOKENS,
-            HINTED_HANDOFF_ENABLED,
+            HINTED_HANDOFF_ENABLED, HINTS_DIR,
             AUTHENTICATOR, AUTHORIZER,
             PARTIONER,
             SEED_PROVIDER, SEEDS,

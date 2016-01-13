@@ -44,7 +44,7 @@ public class CassandraConnection implements Closeable {
 
     private final void connect(String node, int port) {
         cluster = Cluster.builder().addContactPoint(node).withPort(port).build();
-        Metadata metadata = cluster.getMetadata();
+        Metadata metadata = getMetadata();
         CassandraLogger.LOGGER.infof("Connected to cluster: %s\n", metadata.getClusterName());
         for (Host host : metadata.getAllHosts()) {
             CassandraLogger.LOGGER.infof("Datacenter: %s; Host: %s; Rack: %s\n", host.getDatacenter(), host.getAddress(), host.getRack());
@@ -54,6 +54,11 @@ public class CassandraConnection implements Closeable {
     public Session getSession () {
         assert cluster != null;
         return cluster.connect();
+    }
+
+    public Metadata getMetadata () {
+        assert cluster != null;
+        return cluster.getMetadata();
     }
 
     @Override

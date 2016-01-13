@@ -19,13 +19,13 @@ package org.wildfly.extension.cassandra;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
-import org.jboss.logging.MessageLogger;
+import org.jboss.logging.annotations.MessageLogger;
 
 /**
  * Log messages for WildFly cassandra module
  * @author Heiko Braun
  */
-@MessageLogger(projectCode = "<<none>>")
+@MessageLogger(projectCode = "WFLY-CASSANDRA", length = 4)
 public interface CassandraLogger extends BasicLogger {
     /**
      * A logger with the category {@code org.wildfly.cassandra}.

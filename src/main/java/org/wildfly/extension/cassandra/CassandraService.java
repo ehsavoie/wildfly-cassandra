@@ -19,8 +19,6 @@ package org.wildfly.extension.cassandra;
 import static java.io.File.separatorChar;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Set;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
@@ -53,6 +51,7 @@ public class CassandraService implements Service<CassandraDaemon> {
     public static final String CASSANDRA_DATA_FILE_DIR = "cassandra/data";
     public static final String CASSANDRA_SAVED_CACHES_DIR = "cassandra/saved_caches";
     public static final String CASSANDRA_COMMIT_LOG_DIR = "cassandra/commitlog";
+    public static final String CASSANDRA_HINTS_DIR = "cassandra/hints";
 
     public static final ServiceName BASE_SERVICE_NAME = ServiceName.JBOSS.append("cassandra");
 
@@ -99,6 +98,12 @@ public class CassandraService implements Service<CassandraDaemon> {
                 serviceConfig.commitlog_directory = resolve(pathManager, CASSANDRA_COMMIT_LOG_DIR, ServerEnvironment.SERVER_DATA_DIR)
                         + separatorChar + clusterName;
             }
+
+            if (null == serviceConfig.hints_directory) {
+                serviceConfig.hints_directory = resolve(pathManager, CASSANDRA_HINTS_DIR, ServerEnvironment.SERVER_DATA_DIR)
+                        + separatorChar + clusterName;
+            }
+
             boolean needConfigReload = DMRConfigLoader.CASSANDRA_CONFIG != null;
             // static injection needed due to the way C* initialises it's ConfigLoader
             DMRConfigLoader.CASSANDRA_CONFIG = serviceConfig;
@@ -114,11 +119,11 @@ public class CassandraService implements Service<CassandraDaemon> {
         }
     }
 
-    private void reloadConfig() throws IllegalArgumentException, IllegalAccessException, SecurityException, NoSuchMethodException, InvocationTargetException {
-        Method applyConfig = DatabaseDescriptor.class.getDeclaredMethod("applyConfig", Config.class);
-        applyConfig.setAccessible(true);
-        applyConfig.invoke(null, serviceConfig);
-//        DatabaseDescriptor.applyConfig(serviceConfig); we need to change this in C* code
+    private void reloadConfig() {
+//        Method applyConfig = DatabaseDescriptor.class.getDeclaredMethod("applyConfig", Config.class);
+//        applyConfig.setAccessible(true);
+//        applyConfig.invoke(null, serviceConfig);
+        DatabaseDescriptor.applyConfig(serviceConfig);
     }
 
     @Override

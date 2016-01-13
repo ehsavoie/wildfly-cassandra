@@ -122,7 +122,7 @@ class ClusterAdd extends AbstractAddStepHandler {
         final Config cassandraConfig = new Config();
         cassandraConfig.cluster_name = address.getLastElement().getValue();
         cassandraConfig.num_tokens= ClusterDefinition.NUM_TOKENS.resolveModelAttribute(context, fullModel).asInt();
-        cassandraConfig.hinted_handoff_enabled = ClusterDefinition.HINTED_HANDOFF_ENABLED.resolveModelAttribute(context, fullModel).asString();
+        cassandraConfig.hinted_handoff_enabled = ClusterDefinition.HINTED_HANDOFF_ENABLED.resolveModelAttribute(context, fullModel).asBoolean();
 
         cassandraConfig.authenticator = ClusterDefinition.AUTHENTICATOR.resolveModelAttribute(context, fullModel).asString();
         cassandraConfig.authorizer= ClusterDefinition.AUTHORIZER.resolveModelAttribute(context, fullModel).asString();

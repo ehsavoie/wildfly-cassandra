@@ -32,6 +32,14 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>${project.basedir}/src/main/resources/lib</directory>
+            <filtered>false</filtered>
+            <outputDirectory>modules/system/layers/base/org/wildfly/extension/cassandra/main</outputDirectory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>${project.basedir}/src/main/resources/scripts</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
@@ -95,18 +103,18 @@
                 <include>org.apache.commons:commons-lang3</include>
                 <include>org.antlr:antlr</include>
                 <include>org.antlr:antlr-runtime</include>
-                <include>org.antlr:stringtemplate</include>
                 <include>org.codehaus.jackson:jackson-core-asl</include>
                 <include>org.codehaus.jackson:jackson-mapper-asl</include>
                 <include>com.googlecode.json-simple</include>
                 <include>com.boundary:high-scale-lib</include>
                 <include>org.mindrot:jbcrypt</include>
                 <include>io.dropwizard.metrics:metrics-core</include>
+                <include>com.addthis.metrics:reporter-config-base</include>
                 <include>com.addthis.metrics:reporter-config3</include>
                 <include>com.thinkaurelius.thrift</include>
                 <include>com.lmax:disruptor</include>
-                <include>net.sf.supercsv</include>
                 <include>org.apache.thrift</include>
+                <include>org.jgrapht:jgrapht-core</include>
 
                 <include>com.github.jbellis:jamm</include>
                 <include>net.java.dev.jna:jna</include>
@@ -117,6 +125,17 @@
                 <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
                 <include>io.netty:netty-all</include>
             </includes>
+            <excludes>
+                <exclude>io.netty:netty-common</exclude>
+                <exclude>io.netty:netty-common</exclude>
+                <exclude>io.netty:netty-handler</exclude>
+                <exclude>io.netty:netty-codec</exclude>
+                <exclude>io.netty:netty-buffer</exclude>
+                <exclude>io.netty:netty-transport</exclude>
+                <exclude>ch.qos.logback:logback-core</exclude>
+                <exclude>ch.qos.logback:logback-classic</exclude>
+                <exclude>org.slf4j:log4j-over-slf4j</exclude>
+            </excludes>
         </dependencySet>
 
     </dependencySets>

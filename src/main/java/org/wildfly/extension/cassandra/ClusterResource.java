@@ -39,8 +39,6 @@ import org.jboss.as.controller.registry.DelegatingResource;
 import org.jboss.as.controller.registry.PlaceholderResource;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 
 /**
  * Custom resource to be able to display keyspaces.
@@ -162,14 +160,17 @@ public class ClusterResource extends DelegatingResource {
         if (canAccessCluster()) {
             try (CassandraConnection connection = new CassandraConnection(connectionPoint, port);) {
                 try (Session session = connection.getSession()) {
-                    ResultSet rs = session.execute("SELECT * FROM SYSTEM.SCHEMA_KEYSPACES;");
+                    ResultSet rs = session.execute("SELECT * FROM system_schema.keyspaces;");
                     for (Row row : rs) {
                         String name = row.getString("keyspace_name");
-                        String strategy_class = row.getString("strategy_class");
-                        JSONObject options = (JSONObject) JSONValue.parse(row.getString("strategy_options"));
+                        Map<String, String> options = row.getMap("replication", String.class, String.class);
                         int replication_factor = 1;
                         if (options.containsKey("replication_factor")) {
                             replication_factor = Integer.parseInt(options.get("replication_factor").toString());
+                        }
+                        String strategy_class = "org.apache.cassandra.locator.SimpleStrategy";
+                        if (options.containsKey("class")) {
+                            strategy_class = options.get("class").toString();
                         }
                         result.put(name, new KeyspaceResourceEntry(name, strategy_class, replication_factor));
                     }
@@ -301,6 +302,15 @@ public class ClusterResource extends DelegatingResource {
         public Resource clone() {
             return new KeyspaceResourceEntry(name, model.get(KeyspaceDefinition.CLASS.getName()).asString(),
                     model.get(KeyspaceDefinition.REPLICATION_FACTOR.getName()).asInt());
+        }
+
+        @Override
+        public void registerChild(PathElement address, int index, Resource resource) {
+        }
+
+        @Override
+        public Set<String> getOrderedChildTypes() {
+            return Collections.emptySet();
         }
 
     }

@@ -26,6 +26,7 @@ public class CassandraModel {
     public static final String NUM_TOKENS = "num-tokens";
     public static final String DEBUG = "debug";
     public static final String HINTED_HANDOFF_ENABLED = "hinted-handoff-enabled";
+    public static final String HINTS_DIR = "hints-directory";
     public static final String AUTHENTICATOR = "authenticator";
     public static final String AUTHORIZER = "authorizer";
     public static final String PARTITIONER = "partitioner";
