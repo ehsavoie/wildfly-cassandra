@@ -82,7 +82,7 @@ public class ClusterDefinition extends PersistentResourceDefinition {
     static final SimpleAttributeDefinition HINTED_HANDOFF_ENABLED =
             new SimpleAttributeDefinitionBuilder(CassandraModel.HINTED_HANDOFF_ENABLED, ModelType.BOOLEAN, true)
                     .setAllowExpression(false)
-                    .setDefaultValue(new ModelNode(false))
+                    .setDefaultValue(new ModelNode(true))
                     .setRestartAllServices()
                     .build();
 
