@@ -20,6 +20,8 @@
  */
 package org.wildfly.extension.cassandra;
 
+import org.wildfly.extension.cassandra.logging.CassandraLogger;
+
 import static org.wildfly.extension.cassandra.CassandraModel.KEYSPACE;
 
 import com.datastax.driver.core.ResultSet;

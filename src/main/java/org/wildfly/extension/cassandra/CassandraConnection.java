@@ -20,6 +20,7 @@
  */
 package org.wildfly.extension.cassandra;
 
+import org.wildfly.extension.cassandra.logging.CassandraLogger;
 import java.io.Closeable;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;

@@ -17,6 +17,8 @@
 
 package org.wildfly.extension.cassandra;
 
+import org.wildfly.extension.cassandra.logging.CassandraLogger;
+
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 
 import java.util.ArrayList;

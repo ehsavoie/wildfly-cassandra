@@ -16,6 +16,8 @@
  */
 package org.wildfly.extension.cassandra;
 
+import org.wildfly.extension.cassandra.logging.CassandraLogger;
+
 import static java.io.File.separatorChar;
 
 import java.lang.management.ManagementFactory;
