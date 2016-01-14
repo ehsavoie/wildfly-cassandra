@@ -45,10 +45,13 @@ public class SubsystemParser implements XMLStreamConstants, XMLElementReader<Lis
 
     static {
         xmlDescription = builder(RootDefinition.INSTANCE)
+                .setMarshallDefaultValues(true)
                 .addChild(
                         builder(ClusterDefinition.INSTANCE)
                                 .addAttributes(ClusterDefinition.ATTRIBUTES)
-                )               .setXmlElementName(CassandraModel.CLUSTER)
+                                .setMarshallDefaultValues(true)
+                )
+                .setXmlElementName(CassandraModel.CLUSTER)
                 .build();
     }
 

@@ -24,11 +24,11 @@ import static org.wildfly.extension.cassandra.ClusterDefinition.LISTEN_ADDRESS;
 import static org.wildfly.extension.cassandra.ClusterDefinition.NATIVE_TRANSPORT_PORT;
 
 import com.datastax.driver.core.ResultSet;
+import java.io.IOException;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.dmr.ModelNode;
 
@@ -36,12 +36,8 @@ public class KeyspaceRemoveHandler extends AbstractRemoveStepHandler implements 
     public static final KeyspaceRemoveHandler INSTANCE = new KeyspaceRemoveHandler();
 
     @Override
-    protected boolean requiresRuntime(OperationContext context) {
-        return !context.isBooting();
-    }
-
-    @Override
-    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
+    protected void performRemove(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
+        super.performRemove(context, operation, model);
         String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
         ClusterResource cluster = (ClusterResource)context.readResourceFromRoot(context.getCurrentAddress().getParent());
         ModelNode clusterNode = cluster.getModel();
@@ -51,8 +47,11 @@ public class KeyspaceRemoveHandler extends AbstractRemoveStepHandler implements 
             connectionPoint = cluster.getConnectionPoint();
             port = cluster.getPort();
         }
-        executeQuery(context, connectionPoint, port, String.format("DROP KEYSPACE \"%1s\"", keySpaceName));
-        context.removeResource(PathAddress.EMPTY_ADDRESS);
+        try {
+            executeQuery(context, connectionPoint, port, String.format("DROP KEYSPACE %1s", keySpaceName));
+        } catch (IOException ex) {
+           throw new OperationFailedException(ex);
+        }
     }
 
 
