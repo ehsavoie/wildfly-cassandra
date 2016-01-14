@@ -160,22 +160,21 @@ public class ClusterResource extends DelegatingResource {
     private Map<String, ResourceEntry> listKeyspaces() {
         Map<String, ResourceEntry> result = new HashMap<>();
         if (canAccessCluster()) {
-            try (CassandraConnection connection = new CassandraConnection(connectionPoint, port);) {
-                try (Session session = connection.getSession()) {
-                    ResultSet rs = session.execute("SELECT * FROM system_schema.keyspaces;");
-                    for (Row row : rs) {
-                        String name = row.getString("keyspace_name");
-                        Map<String, String> options = row.getMap("replication", String.class, String.class);
-                        int replication_factor = 1;
-                        if (options.containsKey("replication_factor")) {
-                            replication_factor = Integer.parseInt(options.get("replication_factor").toString());
-                        }
-                        String strategy_class = "org.apache.cassandra.locator.SimpleStrategy";
-                        if (options.containsKey("class")) {
-                            strategy_class = options.get("class").toString();
-                        }
-                        result.put(name, new KeyspaceResourceEntry(name, strategy_class, replication_factor));
+            CassandraConnectionPoint connection = new CassandraConnectionPoint(connectionPoint, port, false);
+            try (Session session = connection.getSession()) {
+                ResultSet rs = session.execute("SELECT * FROM system_schema.keyspaces;");
+                for (Row row : rs) {
+                    String name = row.getString("keyspace_name");
+                    Map<String, String> options = row.getMap("replication", String.class, String.class);
+                    int replication_factor = 1;
+                    if (options.containsKey("replication_factor")) {
+                        replication_factor = Integer.parseInt(options.get("replication_factor").toString());
                     }
+                    String strategy_class = "org.apache.cassandra.locator.SimpleStrategy";
+                    if (options.containsKey("class")) {
+                        strategy_class = options.get("class").toString();
+                    }
+                    result.put(name, new KeyspaceResourceEntry(name, strategy_class, replication_factor));
                 }
             } catch (NoHostAvailableException ex) {
                 CassandraLogger.LOGGER.debug("Surprise Surprise ", ex);

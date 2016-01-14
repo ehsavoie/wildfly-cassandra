@@ -20,26 +20,22 @@
  */
 package org.wildfly.extension.cassandra;
 
-
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import org.jboss.as.controller.OperationContext;
-import org.jboss.as.controller.OperationStepHandler;
 
 /**
  *
  * @author <a href="mailto:ehugonne@redhat.com">Emmanuel Hugonnet</a> (c) 2015 Red Hat, inc.
  */
-public abstract class CassandraOperationStepHandler implements OperationStepHandler {
-
-    public void executeQuery(OperationContext context, String connectionPoint, int port, String query) {
-        try ( CassandraConnection connection = new CassandraConnection(connectionPoint, port);) {
-            try (Session session = connection.getSession()) {
-                ResultSet rs = session.execute(query);
-                processResult(context, rs);
-            }
+public interface CassandraOperation  {
+    void processResult(OperationContext context, ResultSet rs);
+    
+    default void executeQuery(OperationContext context, String connectionPoint, int port, String query) {
+        CassandraConnectionPoint connection = new CassandraConnectionPoint(connectionPoint, port, false);
+        try (Session session = connection.getSession()) {
+            ResultSet rs = session.execute(query);
+            processResult(context, rs);
         }
     }
-
-    public abstract void processResult(OperationContext context, ResultSet rs);
 }

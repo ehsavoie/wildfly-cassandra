@@ -20,36 +20,35 @@
  */
 package org.wildfly.extension.cassandra;
 
+
 import static org.wildfly.extension.cassandra.ClusterDefinition.LISTEN_ADDRESS;
 import static org.wildfly.extension.cassandra.ClusterDefinition.NATIVE_TRANSPORT_PORT;
 import static org.wildfly.extension.cassandra.KeyspaceDefinition.CLASS;
 import static org.wildfly.extension.cassandra.KeyspaceDefinition.REPLICATION_FACTOR;
 
 import com.datastax.driver.core.ResultSet;
+import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.operations.common.Util;
-import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 
 /**
  *
  * @author <a href="mailto:ehugonne@redhat.com">Emmanuel Hugonnet</a> (c) 2015 Red Hat, inc.
  */
-public class KeyspaceAddHandler extends CassandraOperationStepHandler {
+public class KeyspaceAddHandler extends AbstractAddStepHandler implements CassandraOperation {
 
     public static final KeyspaceAddHandler INSTANCE = new KeyspaceAddHandler();
 
+    public KeyspaceAddHandler() {
+        super(LISTEN_ADDRESS, NATIVE_TRANSPORT_PORT);
+    }
+
     @Override
-    public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
-        ModelNode model = new ModelNode();
+    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
         String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
-        KeyspaceDefinition.REPLICATION_FACTOR.validateAndSet(operation, model);
-        KeyspaceDefinition.CLASS.validateAndSet(operation, model);
-        Resource resource = context.createResource(PathAddress.EMPTY_ADDRESS);
-        resource.writeModel(model);
         ClusterResource cluster = (ClusterResource)context.readResourceFromRoot(context.getCurrentAddress().getParent());
         ModelNode clusterNode = cluster.getModel();
         String connectionPoint = LISTEN_ADDRESS.resolveModelAttribute(context, clusterNode).asString();
@@ -62,6 +61,11 @@ public class KeyspaceAddHandler extends CassandraOperationStepHandler {
                 String.format("CREATE KEYSPACE \"%1s\" WITH REPLICATION = {'class':'%2s', 'replication_factor': %3d}",
                     keySpaceName, CLASS.resolveModelAttribute(context, model).asString(),
                     REPLICATION_FACTOR.resolveModelAttribute(context, model).asInt(1)));
+    }
+
+    @Override
+    protected boolean requiresRuntime(OperationContext context) {
+        return !context.isBooting();
     }
 
     @Override

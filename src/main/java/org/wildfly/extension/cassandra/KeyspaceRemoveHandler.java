@@ -24,6 +24,7 @@ import static org.wildfly.extension.cassandra.ClusterDefinition.LISTEN_ADDRESS;
 import static org.wildfly.extension.cassandra.ClusterDefinition.NATIVE_TRANSPORT_PORT;
 
 import com.datastax.driver.core.ResultSet;
+import org.jboss.as.controller.AbstractRemoveStepHandler;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -31,11 +32,16 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.dmr.ModelNode;
 
-public class KeyspaceRemoveHandler extends CassandraOperationStepHandler {
+public class KeyspaceRemoveHandler extends AbstractRemoveStepHandler implements CassandraOperation {
     public static final KeyspaceRemoveHandler INSTANCE = new KeyspaceRemoveHandler();
 
     @Override
-    public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+    protected boolean requiresRuntime(OperationContext context) {
+        return !context.isBooting();
+    }
+
+    @Override
+    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
         String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
         ClusterResource cluster = (ClusterResource)context.readResourceFromRoot(context.getCurrentAddress().getParent());
         ModelNode clusterNode = cluster.getModel();
@@ -48,6 +54,7 @@ public class KeyspaceRemoveHandler extends CassandraOperationStepHandler {
         executeQuery(context, connectionPoint, port, String.format("DROP KEYSPACE \"%1s\"", keySpaceName));
         context.removeResource(PathAddress.EMPTY_ADDRESS);
     }
+
 
     @Override
     public void processResult(OperationContext context, ResultSet rs) {
