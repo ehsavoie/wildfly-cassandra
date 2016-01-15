@@ -49,39 +49,26 @@ import org.jboss.dmr.ModelNode;
  */
 public class ClusterResource extends DelegatingResource {
 
-    private String connectionPoint;
-    private int port = ClusterDefinition.DEFAULT_NATIVE_PORT;
+    private ClusterService clusterService;
     private ControlledProcessStateService processState;
 
-    private ClusterResource(Resource delegate, ControlledProcessStateService processState, String connectionPoint, int port) {
+    private ClusterResource(Resource delegate, ControlledProcessStateService processState, ClusterService service) {
         super(delegate);
-        this.connectionPoint = connectionPoint;
+        this.clusterService = service;
         this.processState = processState;
-        this.port = port;
     }
 
     public ClusterResource() {
-        this((Resource.Factory.create(false)), null, "", ClusterDefinition.DEFAULT_NATIVE_PORT);
+        this((Resource.Factory.create(false)), null, null);
     }
 
-    public void setConnectionPoint(String connectionPoint) {
-        this.connectionPoint = connectionPoint;
+    public void setService(ClusterService service) {
+        this.clusterService = service;
     }
 
-    public String getConnectionPoint() {
-        return connectionPoint;
-    }
-
-    public int getPort() {
-        return port;
-    }
 
     public void setProcessState(ControlledProcessStateService processState) {
         this.processState = processState;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
     }
 
     @Override
@@ -157,30 +144,30 @@ public class ClusterResource extends DelegatingResource {
         return super.getChild(element);
     }
 
+    public Session getSession() {
+        return clusterService.getSession();
+    }
+
     private Map<String, ResourceEntry> listKeyspaces() {
         Map<String, ResourceEntry> result = new HashMap<>();
         if (canAccessCluster()) {
-            try (CassandraConnectionPoint connection = new CassandraConnectionPoint(connectionPoint, port, false)) {
-                try (Session session = connection.getSession()) {
-                    ResultSet rs = session.execute("SELECT * FROM system_schema.keyspaces;");
-                    for (Row row : rs) {
-                        String name = row.getString("keyspace_name");
-                        Map<String, String> options = row.getMap("replication", String.class, String.class);
-                        int replication_factor = 1;
-                        if (options.containsKey("replication_factor")) {
-                            replication_factor = Integer.parseInt(options.get("replication_factor"));
-                        }
-                        String strategy_class = "org.apache.cassandra.locator.SimpleStrategy";
-                        if (options.containsKey("class")) {
-                            strategy_class = options.get("class");
-                        }
-                        result.put(name, new KeyspaceResourceEntry(name, strategy_class, replication_factor));
+            try (Session session = getSession()) {
+                ResultSet rs = session.execute("SELECT * FROM system_schema.keyspaces;");
+                for (Row row : rs) {
+                    String name = row.getString("keyspace_name");
+                    Map<String, String> options = row.getMap("replication", String.class, String.class);
+                    int replication_factor = 1;
+                    if (options.containsKey("replication_factor")) {
+                        replication_factor = Integer.parseInt(options.get("replication_factor"));
                     }
-                } catch (NoHostAvailableException ex) {
-                    CassandraLogger.LOGGER.debug("Surprise Surprise ", ex);
-                } catch (Exception ex) {
-                    CassandraLogger.LOGGER.error("Surprise ", ex);
+                    String strategy_class = "org.apache.cassandra.locator.SimpleStrategy";
+                    if (options.containsKey("class")) {
+                        strategy_class = options.get("class");
+                    }
+                    result.put(name, new KeyspaceResourceEntry(name, strategy_class, replication_factor));
                 }
+            } catch (NoHostAvailableException ex) {
+                CassandraLogger.LOGGER.debug("Surprise Surprise ", ex);
             } catch (Exception ex) {
                 CassandraLogger.LOGGER.error("Surprise ", ex);
             }
@@ -201,7 +188,7 @@ public class ClusterResource extends DelegatingResource {
 
     @Override
     public Resource clone() {
-        return new ClusterResource(super.clone(), processState, connectionPoint, port);
+        return new ClusterResource(super.clone(), processState, clusterService);
     }
 
     public static class KeyspaceResourceEntry implements ResourceEntry {

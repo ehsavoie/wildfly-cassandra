@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Red Hat, inc., and individual contributors
+ * Copyright (C) 2016 Red Hat, inc., and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
  * distribution for a full listing of individual contributors.
  *
@@ -20,33 +20,46 @@
  */
 package org.wildfly.extension.cassandra;
 
-import org.wildfly.extension.cassandra.logging.CassandraLogger;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Objects;
+import org.apache.cassandra.service.CassandraDaemon;
+import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
+import org.wildfly.extension.cassandra.logging.CassandraLogger;
 
 /**
  *
  * @author <a href="mailto:ehugonne@redhat.com">Emmanuel Hugonnet</a> (c) 2015 Red Hat, inc.
  */
-public class CassandraConnectionPoint implements Closeable {
-
+public class ClusterService implements Service<Cluster>{
     private Cluster cluster;
-    private final String key;
+    private final String node;
+    private final int port;
+    private final boolean debug;
+    private final InjectedValue<CassandraDaemon> daemonValue = new InjectedValue();
+    public static final ServiceName BASE_SERVICE_NAME = ServiceName.JBOSS.append("cassandra-cluster");
 
-    public CassandraConnectionPoint(String node, int port, boolean debug) {
-        key = node + ':' + port;
-        connect(node, port, debug);
+    public ClusterService(String node, int port, boolean debug) {
+        this.node = node;
+        this.port = port;
+        this.debug = debug;
     }
 
-    private final void connect(String node, int port, boolean debug) {
+    public ServiceName getServiceName() {
+        return BASE_SERVICE_NAME.append(node);
+    }
+
+    @Override
+    public void start(StartContext context) throws StartException {
         cluster = Cluster.builder().addContactPoint(node).withPort(port).build();
         if (debug) {
-            Metadata metadata = getMetadata();
+            Metadata metadata = cluster.getMetadata();
             CassandraLogger.LOGGER.infof("Connected to cluster: %s\n", metadata.getClusterName());
             for (Host host : metadata.getAllHosts()) {
                 CassandraLogger.LOGGER.infof("Datacenter: %s; Host: %s; Rack: %s\n", host.getDatacenter(), host.getAddress(), host.getRack());
@@ -54,45 +67,21 @@ public class CassandraConnectionPoint implements Closeable {
         }
     }
 
+    @Override
+    public void stop(StopContext context) {
+        cluster.close();
+    }
+
+    @Override
+    public Cluster getValue() throws IllegalStateException, IllegalArgumentException {
+        return cluster;
+    }
+
     public Session getSession() {
-        assert cluster != null;
         return cluster.connect();
     }
 
-    public Metadata getMetadata() {
-        assert cluster != null;
-        return cluster.getMetadata();
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 37 * hash + Objects.hashCode(this.key);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final CassandraConnectionPoint other = (CassandraConnectionPoint) obj;
-        if (!Objects.equals(this.key, other.key)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public void close() throws IOException {
-        if(cluster != null) {
-            cluster.close();
-        }
+    public InjectedValue<CassandraDaemon> getDaemonValue() {
+        return daemonValue;
     }
 }

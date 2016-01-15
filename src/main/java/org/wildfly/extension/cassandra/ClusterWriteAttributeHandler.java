@@ -44,6 +44,6 @@ public class ClusterWriteAttributeHandler extends RestartParentWriteAttributeHan
 
     @Override
     protected void recreateParentService(OperationContext context, PathAddress parentAddress, ModelNode parentModel) throws OperationFailedException {
-        ClusterAdd.installRuntimeServices(context, parentAddress, parentModel);
+        ((ClusterResource)context.readResourceFromRoot(parentAddress)).setService(ClusterAdd.installRuntimeServices(context, parentAddress, parentModel));
     }
 }

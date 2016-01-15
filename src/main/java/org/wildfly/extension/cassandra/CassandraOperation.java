@@ -32,12 +32,8 @@ import org.jboss.as.controller.OperationContext;
 public interface CassandraOperation  {
     void processResult(OperationContext context, ResultSet rs);
     
-    default void executeQuery(OperationContext context, String connectionPoint, int port, String query) throws IOException {
-        try (CassandraConnectionPoint connection = new CassandraConnectionPoint(connectionPoint, port, false)) {
-            try (Session session = connection.getSession()) {
-                ResultSet rs = session.execute(query);
-                processResult(context, rs);
-            }
-        }
+    default void executeQuery(OperationContext context, Session session, String query) throws IOException {
+        ResultSet rs = session.execute(query);
+        processResult(context, rs);
     }
 }

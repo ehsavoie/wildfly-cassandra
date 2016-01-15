@@ -27,9 +27,9 @@ import static org.wildfly.extension.cassandra.KeyspaceDefinition.CLASS;
 import static org.wildfly.extension.cassandra.KeyspaceDefinition.REPLICATION_FACTOR;
 
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Session;
 import java.io.IOException;
 import org.jboss.as.controller.AbstractAddStepHandler;
-import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.operations.common.Util;
@@ -49,17 +49,10 @@ public class KeyspaceAddHandler extends AbstractAddStepHandler implements Cassan
 
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
-        try {
-            String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
-            ClusterResource cluster = (ClusterResource)context.readResourceFromRoot(context.getCurrentAddress().getParent());
-            ModelNode clusterNode = cluster.getModel();
-            String connectionPoint = LISTEN_ADDRESS.resolveModelAttribute(context, clusterNode).asString();
-            int port = NATIVE_TRANSPORT_PORT.resolveModelAttribute(context, clusterNode).asInt();
-            if(cluster.getProcessState().getCurrentState() == ControlledProcessState.State.RELOAD_REQUIRED) {
-                connectionPoint = cluster.getConnectionPoint();
-                port = cluster.getPort();
-            }
-            executeQuery(context, connectionPoint, port,
+        String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
+        ClusterResource cluster = (ClusterResource) context.readResourceFromRoot(context.getCurrentAddress().getParent());
+        try (Session session = cluster.getSession()) {
+            executeQuery(context, session,
                     String.format("CREATE KEYSPACE \"%1s\" WITH REPLICATION = {'class':'%2s', 'replication_factor': %3d}",
                             keySpaceName, CLASS.resolveModelAttribute(context, model).asString(),
                             REPLICATION_FACTOR.resolveModelAttribute(context, model).asInt(1)));

@@ -20,13 +20,11 @@
  */
 package org.wildfly.extension.cassandra;
 
-import static org.wildfly.extension.cassandra.ClusterDefinition.LISTEN_ADDRESS;
-import static org.wildfly.extension.cassandra.ClusterDefinition.NATIVE_TRANSPORT_PORT;
 
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Session;
 import java.io.IOException;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
-import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.operations.common.Util;
@@ -40,15 +38,8 @@ public class KeyspaceRemoveHandler extends AbstractRemoveStepHandler implements 
         super.performRemove(context, operation, model);
         String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
         ClusterResource cluster = (ClusterResource)context.readResourceFromRoot(context.getCurrentAddress().getParent());
-        ModelNode clusterNode = cluster.getModel();
-        String connectionPoint = LISTEN_ADDRESS.resolveModelAttribute(context, clusterNode).asString();
-        int port = NATIVE_TRANSPORT_PORT.resolveModelAttribute(context, clusterNode).asInt();
-        if(cluster.getProcessState().getCurrentState() == ControlledProcessState.State.RELOAD_REQUIRED) {
-            connectionPoint = cluster.getConnectionPoint();
-            port = cluster.getPort();
-        }
-        try {
-            executeQuery(context, connectionPoint, port, String.format("DROP KEYSPACE %1s", keySpaceName));
+        try (Session session = cluster.getSession()) {
+            executeQuery(context, session, String.format("DROP KEYSPACE %1s", keySpaceName));
         } catch (IOException ex) {
            throw new OperationFailedException(ex);
         }

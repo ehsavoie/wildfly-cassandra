@@ -137,7 +137,7 @@ public class CassandraService implements Service<CassandraDaemon> {
                 Set<ObjectInstance> result = mbs.queryMBeans(new ObjectName("org.apache.cassandra.*:*"), null);
                 for(ObjectInstance cassandraMBean : result) {
                     try {
-                        mbs.unregisterMBean(cassandraMBean.getObjectName());
+                        mbs.unregisterMBean(cassandraMBean.getObjectName());  
                     } catch (InstanceNotFoundException | MBeanRegistrationException ex) {
                         //Who cares to unregister if it's not there.
                     }
