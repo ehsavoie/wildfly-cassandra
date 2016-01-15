@@ -52,6 +52,7 @@ public class KeyspaceAddHandler extends AbstractAddStepHandler implements Cassan
         String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
         ClusterResource cluster = (ClusterResource) context.readResourceFromRoot(context.getCurrentAddress().getParent());
         try (Session session = cluster.getSession()) {
+            cluster.traceQuery("SELECT * FROM system_schema.keyspaces;");
             executeQuery(context, session,
                     String.format("CREATE KEYSPACE \"%1s\" WITH REPLICATION = {'class':'%2s', 'replication_factor': %3d}",
                             keySpaceName, CLASS.resolveModelAttribute(context, model).asString(),

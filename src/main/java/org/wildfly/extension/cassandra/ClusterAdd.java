@@ -77,7 +77,7 @@ class ClusterAdd extends AbstractAddStepHandler {
         }
     }
 
-    static ClusterService installRuntimeServices(OperationContext context, PathAddress address, ModelNode clusterModel) throws OperationFailedException {
+    static CassandraConnectionService installRuntimeServices(OperationContext context, PathAddress address, ModelNode clusterModel) throws OperationFailedException {
         String clusterName = address.getLastElement().getValue();
         final Config serviceConfig = createServiceConfig(context, address, clusterModel);
         CassandraService service = new CassandraService(clusterName, serviceConfig);
@@ -87,7 +87,7 @@ class ClusterAdd extends AbstractAddStepHandler {
                 .addDependency(PathManagerService.SERVICE_NAME, PathManager.class, service.getPathManagerInjector())
                 .addDependency(ControlledProcessStateService.SERVICE_NAME)
                 .install();
-        ClusterService clusterService = new ClusterService(serviceConfig.listen_address, serviceConfig.native_transport_port, false);
+        CassandraConnectionService clusterService = new CassandraConnectionService(serviceConfig.listen_address, serviceConfig.native_transport_port, false);
         serviceTarget.addService(clusterService.getServiceName(), clusterService)
                 .setInitialMode(ServiceController.Mode.ACTIVE)
                 .addDependency(service.getServiceName())

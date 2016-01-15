@@ -39,7 +39,8 @@ public class KeyspaceRemoveHandler extends AbstractRemoveStepHandler implements 
         String keySpaceName = Util.getNameFromAddress(context.getCurrentAddress());
         ClusterResource cluster = (ClusterResource)context.readResourceFromRoot(context.getCurrentAddress().getParent());
         try (Session session = cluster.getSession()) {
-            executeQuery(context, session, String.format("DROP KEYSPACE %1s", keySpaceName));
+            cluster.traceQuery("DROP KEYSPACE %1s;");
+            executeQuery(context, session, String.format("DROP KEYSPACE %1s;", keySpaceName));
         } catch (IOException ex) {
            throw new OperationFailedException(ex);
         }

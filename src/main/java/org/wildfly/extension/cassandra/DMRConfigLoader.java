@@ -33,20 +33,9 @@ public class DMRConfigLoader implements ConfigurationLoader {
 
     @Override
     public Config loadConfig() throws ConfigurationException {
-        if(null==CASSANDRA_CONFIG) {
+        if(null == CASSANDRA_CONFIG) {
             throw new IllegalStateException("Cassandra config not initialized");
         }
-
         return CASSANDRA_CONFIG;
     }
-
-    /*private Config loadFromConfigFile() throws ConfigurationException {
-        File configFile = new File(System.getProperty("jboss.modules.dir")
-                            + "/system/layers/base/org/wildfly/cassandra/main/conf/cassandra.yaml");
-
-        System.setProperty("cassandra.config", "file:" + configFile.getAbsolutePath());
-        System.setProperty("cassandra-foreground", "true");
-        YamlConfigurationLoader delegate = new YamlConfigurationLoader();
-        return delegate.loadConfig();
-    }*/
 }

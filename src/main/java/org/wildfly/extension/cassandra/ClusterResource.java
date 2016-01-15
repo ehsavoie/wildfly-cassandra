@@ -49,10 +49,10 @@ import org.jboss.dmr.ModelNode;
  */
 public class ClusterResource extends DelegatingResource {
 
-    private ClusterService clusterService;
+    private CassandraConnectionService clusterService;
     private ControlledProcessStateService processState;
 
-    private ClusterResource(Resource delegate, ControlledProcessStateService processState, ClusterService service) {
+    private ClusterResource(Resource delegate, ControlledProcessStateService processState, CassandraConnectionService service) {
         super(delegate);
         this.clusterService = service;
         this.processState = processState;
@@ -62,10 +62,13 @@ public class ClusterResource extends DelegatingResource {
         this((Resource.Factory.create(false)), null, null);
     }
 
-    public void setService(ClusterService service) {
+    void setService(CassandraConnectionService service) {
         this.clusterService = service;
     }
-
+    
+    void setDebugMode(boolean traceQuery) {
+        this.clusterService.setDebug(traceQuery);
+    }
 
     public void setProcessState(ControlledProcessStateService processState) {
         this.processState = processState;
@@ -145,13 +148,18 @@ public class ClusterResource extends DelegatingResource {
     }
 
     public Session getSession() {
-        return clusterService.getSession();
+        return clusterService.getValue();
+    }
+
+    public void traceQuery(String query) {
+        this.clusterService.traceQuery(query);
     }
 
     private Map<String, ResourceEntry> listKeyspaces() {
         Map<String, ResourceEntry> result = new HashMap<>();
         if (canAccessCluster()) {
             try (Session session = getSession()) {
+                traceQuery("SELECT * FROM system_schema.keyspaces;");
                 ResultSet rs = session.execute("SELECT * FROM system_schema.keyspaces;");
                 for (Row row : rs) {
                     String name = row.getString("keyspace_name");

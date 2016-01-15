@@ -28,7 +28,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import org.jboss.as.controller.AbstractWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.ServiceRemoveStepHandler;
 import org.jboss.as.controller.SimpleAttributeDefinition;
@@ -243,6 +247,12 @@ public class ClusterDefinition extends PersistentResourceDefinition {
                     .setDefaultValue(new ModelNode(false))
                     .setRestartJVM()
                     .build();
+
+    static final SimpleAttributeDefinition TRACE_QUERY =
+            new SimpleAttributeDefinitionBuilder(CassandraModel.TRACE_QUERY, ModelType.BOOLEAN, true)
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(false))
+                    .build();
     // -----------
     static final AttributeDefinition[] ATTRIBUTES = {
             DEBUG, NUM_TOKENS,
@@ -258,8 +268,7 @@ public class ClusterDefinition extends PersistentResourceDefinition {
             COMMIT_LOG_SYNC, COMMIT_LOG_SYNC_PERIOD,
             ENDPOINT_SNITCH,
             REQUEST_SCHEDULER,
-            CLIENT_ENCRYPTION, SERVER_ENCRYPTION
-
+            CLIENT_ENCRYPTION, SERVER_ENCRYPTION, TRACE_QUERY
     };
 
     private static final List<? extends PersistentResourceDefinition> CHILDREN = Collections.singletonList(KeyspaceDefinition.INSTANCE);
@@ -270,8 +279,11 @@ public class ClusterDefinition extends PersistentResourceDefinition {
     public void registerAttributes(final ManagementResourceRegistration rootResourceRegistration) {
         ClusterWriteAttributeHandler handler = new ClusterWriteAttributeHandler(ATTRIBUTES);
         for (AttributeDefinition attr : ATTRIBUTES) {
-            rootResourceRegistration.registerReadWriteAttribute(attr, null, handler);
+            if(!TRACE_QUERY.equals(attr)) {
+                rootResourceRegistration.registerReadWriteAttribute(attr, null, handler);
+            }
         }
+        rootResourceRegistration.registerReadWriteAttribute(TRACE_QUERY, null, new SimpleWriteAttributeHandler());
     }
 
     @Override
@@ -289,5 +301,22 @@ public class ClusterDefinition extends PersistentResourceDefinition {
         return accessConstraints;
     }
 
+    private static class SimpleWriteAttributeHandler extends AbstractWriteAttributeHandler<Boolean>  {
+        public SimpleWriteAttributeHandler() {
+            super(TRACE_QUERY);
+        }
 
+        @Override
+        protected boolean applyUpdateToRuntime(OperationContext context, ModelNode operation, String attributeName, ModelNode resolvedValue, ModelNode currentValue, HandbackHolder<Boolean> handbackHolder) throws OperationFailedException {
+            ClusterResource resource = (ClusterResource)context.readResource(PathAddress.EMPTY_ADDRESS);
+            resource.setDebugMode(resolvedValue.asBoolean());
+            return false;
+        }
+
+        @Override
+        protected void revertUpdateToRuntime(OperationContext context, ModelNode operation, String attributeName, ModelNode valueToRestore, ModelNode valueToRevert, Boolean handback) throws OperationFailedException {
+           ClusterResource resource = (ClusterResource)context.readResource(PathAddress.EMPTY_ADDRESS);
+           resource.setDebugMode(valueToRestore.asBoolean());
+        }
+    }
 }

@@ -122,9 +122,6 @@ public class CassandraService implements Service<CassandraDaemon> {
     }
 
     private void reloadConfig() {
-//        Method applyConfig = DatabaseDescriptor.class.getDeclaredMethod("applyConfig", Config.class);
-//        applyConfig.setAccessible(true);
-//        applyConfig.invoke(null, serviceConfig);
         DatabaseDescriptor.applyConfig(serviceConfig);
     }
 

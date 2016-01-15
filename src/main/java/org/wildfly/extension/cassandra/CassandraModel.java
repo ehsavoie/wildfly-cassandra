@@ -49,4 +49,5 @@ public class CassandraModel {
     public static final String SERVER_ENCRYPTION = "server-encryption-enabled";
     public static final String CLIENT_ENCRYPTION = "client-encryption-enabled";
     public static final String KEYSPACE = "keyspace";
+    public static final String TRACE_QUERY = "trace-query";
 }

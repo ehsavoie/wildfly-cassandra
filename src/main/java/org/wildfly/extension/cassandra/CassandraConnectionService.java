@@ -34,18 +34,18 @@ import org.jboss.msc.value.InjectedValue;
 import org.wildfly.extension.cassandra.logging.CassandraLogger;
 
 /**
- *
+ * Service to manage the connection to a Cassandra Cluster.
  * @author <a href="mailto:ehugonne@redhat.com">Emmanuel Hugonnet</a> (c) 2015 Red Hat, inc.
  */
-public class ClusterService implements Service<Cluster>{
+public class CassandraConnectionService implements Service<Session>{
     private Cluster cluster;
     private final String node;
     private final int port;
-    private final boolean debug;
+    private boolean debug;
     private final InjectedValue<CassandraDaemon> daemonValue = new InjectedValue();
     public static final ServiceName BASE_SERVICE_NAME = ServiceName.JBOSS.append("cassandra-cluster");
 
-    public ClusterService(String node, int port, boolean debug) {
+    public CassandraConnectionService(String node, int port, boolean debug) {
         this.node = node;
         this.port = port;
         this.debug = debug;
@@ -57,7 +57,7 @@ public class ClusterService implements Service<Cluster>{
 
     @Override
     public void start(StartContext context) throws StartException {
-        cluster = Cluster.builder().addContactPoint(node).withPort(port).build();
+        cluster = Cluster.builder().addContactPoint(node).withPort(port).withoutJMXReporting().withoutMetrics().build();
         if (debug) {
             Metadata metadata = cluster.getMetadata();
             CassandraLogger.LOGGER.infof("Connected to cluster: %s\n", metadata.getClusterName());
@@ -73,12 +73,18 @@ public class ClusterService implements Service<Cluster>{
     }
 
     @Override
-    public Cluster getValue() throws IllegalStateException, IllegalArgumentException {
-        return cluster;
+    public Session getValue() throws IllegalStateException, IllegalArgumentException {
+        return cluster.connect();
     }
 
-    public Session getSession() {
-        return cluster.connect();
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+    public void traceQuery(String query) {
+        if (debug) {
+            CassandraLogger.LOGGER.infof("Query executed: %s", query);
+        }
     }
 
     public InjectedValue<CassandraDaemon> getDaemonValue() {
