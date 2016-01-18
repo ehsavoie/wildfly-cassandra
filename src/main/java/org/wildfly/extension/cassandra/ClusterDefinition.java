@@ -307,6 +307,11 @@ public class ClusterDefinition extends PersistentResourceDefinition {
         }
 
         @Override
+        protected boolean requiresRuntime(OperationContext context) {
+            return true;
+        }
+
+        @Override
         protected boolean applyUpdateToRuntime(OperationContext context, ModelNode operation, String attributeName, ModelNode resolvedValue, ModelNode currentValue, HandbackHolder<Boolean> handbackHolder) throws OperationFailedException {
             ClusterResource resource = (ClusterResource)context.readResource(PathAddress.EMPTY_ADDRESS);
             resource.setDebugMode(resolvedValue.asBoolean());

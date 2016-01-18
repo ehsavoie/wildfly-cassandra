@@ -87,7 +87,8 @@ class ClusterAdd extends AbstractAddStepHandler {
                 .addDependency(PathManagerService.SERVICE_NAME, PathManager.class, service.getPathManagerInjector())
                 .addDependency(ControlledProcessStateService.SERVICE_NAME)
                 .install();
-        CassandraConnectionService clusterService = new CassandraConnectionService(serviceConfig.listen_address, serviceConfig.native_transport_port, false);
+        boolean traceQuery = ClusterDefinition.TRACE_QUERY.resolveModelAttribute(context, clusterModel).asBoolean();
+        CassandraConnectionService clusterService = new CassandraConnectionService(serviceConfig.listen_address, serviceConfig.native_transport_port, traceQuery);
         serviceTarget.addService(clusterService.getServiceName(), clusterService)
                 .setInitialMode(ServiceController.Mode.ACTIVE)
                 .addDependency(service.getServiceName())
