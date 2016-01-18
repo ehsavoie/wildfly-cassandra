@@ -30,7 +30,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.jboss.as.controller.ControlledProcessState;
@@ -38,7 +37,6 @@ import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.registry.DelegatingResource;
-import org.jboss.as.controller.registry.PlaceholderResource;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 
@@ -65,7 +63,16 @@ public class ClusterResource extends DelegatingResource {
     void setService(CassandraConnectionService service) {
         this.clusterService = service;
     }
-    
+
+    void fillModel() {
+        if(super.getChildren(KEYSPACE).isEmpty()) {
+            Map<String, ResourceEntry> keyspaces = listKeyspaces();
+            for(Map.Entry<String, ResourceEntry> keyspace : keyspaces.entrySet()) {
+                registerChild(PathElement.pathElement(KEYSPACE, keyspace.getKey()), keyspace.getValue());
+            }
+        }
+    }
+
     void setDebugMode(boolean traceQuery) {
         this.clusterService.setDebug(traceQuery);
     }
@@ -75,75 +82,51 @@ public class ClusterResource extends DelegatingResource {
     }
 
     @Override
+    public Set<String> getChildTypes() {
+        Set<String> types = super.getChildTypes();
+        types.add(KEYSPACE);
+        return types; //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
     public Set<String> getChildrenNames(String childType) {
-        if (KEYSPACE.equals(childType)) {
-            return listKeyspaces().keySet();
-        }
+        fillModel();
         return super.getChildrenNames(childType);
     }
 
     @Override
     public Resource requireChild(PathElement element) {
-        if (KEYSPACE.equals(element.getKey())) {
-            return listKeyspaces().get(element.getValue());
-        }
+        fillModel();
         return super.requireChild(element);
     }
 
     @Override
     public boolean hasChildren(String childType) {
-        if (KEYSPACE.equals(childType)) {
-            return !listKeyspaces().isEmpty();
-        }
+        fillModel();
         return super.hasChildren(childType);
     }
 
     @Override
     public boolean hasChild(PathElement element) {
-        if (KEYSPACE.equals(element.getKey())) {
-            return listKeyspaces().containsKey(element.getValue());
-        }
+        fillModel();
         return super.hasChild(element);
     }
 
     @Override
     public Set<ResourceEntry> getChildren(String childType) {
-        if (KEYSPACE.equals(childType)) {
-            return new HashSet<>(listKeyspaces().values());
-        }
+        fillModel();
         return super.getChildren(childType);
     }
 
     @Override
     public Resource navigate(PathAddress address) {
-        if (address.size() > 0 && KEYSPACE.equals(address.getElement(0).getKey())) {
-            if (address.size() > 1) {
-                throw new NoSuchResourceException(address.getElement(1));
-            }
-            if (listKeyspaces().containsKey(address.getElement(0).getValue())) {
-                return Resource.Factory.create(true);
-            }
-            throw new NoSuchResourceException(address.getElement(0));
-        }
+        fillModel();
         return super.navigate(address);
     }
 
     @Override
-    public Set<String> getChildTypes() {
-        Set<String> types = super.getChildTypes();
-        types.add(KEYSPACE);
-        return types;
-    }
-
-    @Override
     public Resource getChild(PathElement element) {
-        if (KEYSPACE.equals(element.getKey())) {
-            Map<String, ResourceEntry> keyspaces = listKeyspaces();
-            if (keyspaces.containsKey(element.getValue())) {
-                return keyspaces.get(element.getValue());
-            }
-            return PlaceholderResource.INSTANCE;
-        }
+        fillModel();
         return super.getChild(element);
     }
 
