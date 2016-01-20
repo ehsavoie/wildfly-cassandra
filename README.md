@@ -104,6 +104,40 @@ The service configuration can be accessed like any other wildfly resource:
  }`
 </pre>
 
+## Executing query
+
+We have a basic support for CSQL 3 using the execute command:
+<pre>
+[standalone@localhost:9990 /] /subsystem=cassandra/cluster=WildflyCluster:execute(query="CREATE TABLE mykeyspace.users (user_id int PRIMARY KEY, fname text, lname text);")
+{                                                                                                                                                                                                                                                  
+    "outcome" => "success",                                                                                                                                                                                                                        
+    "result" => {"result_set" => []}                                                                                                                                                                                                               
+}                                                                                                                                                                                                                                                  
+[standalone@localhost:9990 /] /subsystem=cassandra/cluster=WildflyCluster:execute(query="INSERT INTO users (user_id,  fname, lname) VALUES (1745, 'john', 'smith');")
+{                                                                                                                                                                                                                                                  
+    "outcome" => "failed",                                                                                                                                                                                                                         
+    "failure-description" => "WFLYCTL0158: Operation handler failed: com.datastax.driver.core.exceptions.InvalidQueryException: No keyspace has been specified. USE a keyspace, or explicitly specify keyspace.tablename",                         
+    "rolled-back" => true                                                                                                                                                                                                                          
+}                                                                                                                                                                                                                                                  
+[standalone@localhost:9990 /] /subsystem=cassandra/cluster=WildflyCluster:execute(query="INSERT INTO mykeyspace.users (user_id,  fname, lname) VALUES (1745, 'john', 'smith');")
+{                                                                                                                                                                                                                                                  
+    "outcome" => "success",                                                                                                                                                                                                                        
+    "result" => {"result_set" => []}                                                                                                                                                                                                               
+}                                                              
+/subsystem=cassandra/cluster=WildflyCluster:execute(query="INSERT INTO users (user_id,  fname, lname) VALUES (1744, 'john', 'doe');", keyspace="mykeyspace")
+{
+    "outcome" => "success",
+    "result" => {"result_set" => []}
+}
+/subsystem=cassandra/cluster=WildflyCluster:execute(query="SELECT * FROM users;", keyspace="mykeyspace")
+{
+    "outcome" => "success",
+    "result" => {"result_set" => [
+        "Row[1745, john, smith]",
+        "Row[1744, john, doe]"
+    ]}
+}
+</pre>
 ## Issues
 
 If you discover any problems or see room for improvement, feel free to file an issue and we'll discuss it:

@@ -77,6 +77,10 @@ public class CassandraConnectionService implements Service<Session>{
         return cluster.connect();
     }
 
+    public Session getValue(String keyspace) throws IllegalStateException, IllegalArgumentException {
+        return cluster.connect(keyspace);
+    }
+
     public void setDebug(boolean debug) {
         this.debug = debug;
     }

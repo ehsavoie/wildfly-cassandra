@@ -134,6 +134,10 @@ public class ClusterResource extends DelegatingResource {
         return clusterService.getValue();
     }
 
+    public Session getSession(String keyspace) {
+        return clusterService.getValue(keyspace);
+    }
+
     public void traceQuery(String query) {
         this.clusterService.traceQuery(query);
     }

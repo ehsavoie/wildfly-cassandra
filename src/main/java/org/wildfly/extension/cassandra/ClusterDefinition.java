@@ -287,6 +287,12 @@ public class ClusterDefinition extends PersistentResourceDefinition {
     }
 
     @Override
+    public void registerOperations(ManagementResourceRegistration resourceRegistration) {
+        super.registerOperations(resourceRegistration);
+        resourceRegistration.registerOperationHandler(CassandraQueryHandler.DEFINITION, CassandraQueryHandler.INSTANCE);
+    }
+
+    @Override
     public Collection<AttributeDefinition> getAttributes() {
         return Arrays.asList(ATTRIBUTES);
     }
